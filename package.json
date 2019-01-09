@@ -4,6 +4,7 @@
   "description": "tile size reducer\u001b[D\u001b[C\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[C\u001b[C\u001b[C\u001b[C\u001b[Cimage tile size reducer",
   "main": "app.js",
   "dependencies": {
+    "compressorjs": "^1.0.3",
     "fs": "^0.0.1-security",
     "get-folder-size": "^2.0.0",
     "readline-sync": "^1.4.9"
