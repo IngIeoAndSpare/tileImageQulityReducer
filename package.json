@@ -1,0 +1,29 @@
+{
+  "name": "tileimagequlityreducer",
+  "version": "0.0.1",
+  "description": "tile size reducer\u001b[D\u001b[C\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[D\u001b[C\u001b[C\u001b[C\u001b[C\u001b[Cimage tile size reducer",
+  "main": "app.js",
+  "dependencies": {
+    "fs": "^0.0.1-security",
+    "get-folder-size": "^2.0.0",
+    "readline-sync": "^1.4.9"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "empty"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IngIeoAndSpare/tileImageQulityReducer.git"
+  },
+  "keywords": [
+    "reduce",
+    "map_tile"
+  ],
+  "author": "IngIeoAndSpare",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/IngIeoAndSpare/tileImageQulityReducer/issues"
+  },
+  "homepage": "https://github.com/IngIeoAndSpare/tileImageQulityReducer#readme"
+}
