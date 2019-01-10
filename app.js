@@ -2,7 +2,9 @@
 var fs = require('fs'),
 	readLineSync = require('readline-sync'),
     checkSize = require('get-folder-size'),
-    imageCompressor = require('compressorjs');
+    imageCompressor = require('imagemin'),
+    imageminMozjpeg = require('imagemin-mozjpeg'),
+    imageminPngquant = require('imagemin-pngquant');
 
 // user input value 16x8 size request
 var userInputData = []; // 0. input path  1. image format  2. reduce persent 
@@ -10,13 +12,8 @@ var userInputData = []; // 0. input path  1. image format  2. reduce persent
 // menu text
 const menuText = [
     'input folder name => ',
-    'input image format => ',
-    'input image reduce persent <range : (0 ~ 1) ex) 0.8> => '
-];
-
-// ???
-const reducePersent = [
-    
+    'input image format (png, jpg)=> ',
+    'input image reduce persent <range : (0 ~ 100)> '
 ];
 
 // folder file list
@@ -34,6 +31,11 @@ module.exports = {
             folderPath = './' + userInputData[0];
         }
         this.getImageFileList(folderPath);
+        for(let imageFileName of fileList) {
+            let fileFullPath = folderPath +'/'+imageFileName;
+            this.imageCompressor(fileFullPath, folderPath);
+            // this.getImageData(imageFileName, folderPath);
+        }
     },
     getUserInput : function () {
         // get user input text
@@ -53,7 +55,36 @@ module.exports = {
             }
         }
     },
-    imageCompressor : function (fileName, path, data) {
+    // getImageData : function (fileName, path) {
+    //     //not use now...
+    //     const thisApp = this;
+    //     fs.readFile(path + '/' + fileName, (err, data) => {
+    //         if(err) {
+    //             thisApp.errDisplay(err, 'get Image fail. please check file');
+    //         } else {
+    //             let convertData = new Buffer(data);
+    //             thisApp.imageCompressor(convertData, fileName, path).then(response)
+    //         }
+    //     });
+    // },
+    imageCompressor : function (imagePath ,folderPath) {
+        //XXX: 추 후에 사용하려면 더 적절한 패키지를 찾을 것 (이유 : 사용 목적에 비해 디펜던시, 노드모듈이 너무 많음.)
+        let setQuality = Number(userInputData[2]);
+
+        imageCompressor([imagePath], folderPath + '/convert', {
+            plugins: [
+                imageminMozjpeg({
+                    quality : setQuality
+                }),
+                imageminPngquant({quality: [(setQuality-10)/100, setQuality/100 ]})
+            ]
+        }).then(result => {
+            //TODO : 후속처리 및 파일 크기 비교
+
+        });
+    },
+    getFileSize : function (path) {
+        //TODO : get file size
         
     },
     checkDir : function (path) {
