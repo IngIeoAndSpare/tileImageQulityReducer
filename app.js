@@ -9,6 +9,9 @@ var fs = require('fs'),
 // user input value 16x8 size request
 var userInputData = []; // 0. input path  1. image format  2. reduce persent 
 
+// origin file size, convert file size map
+var fileSizeMap = {};
+
 // menu text
 const menuText = [
     'input folder name => ',
@@ -19,12 +22,17 @@ const menuText = [
 // folder file list
 var fileList = [];
 
+// check convert count
+var convertCount = 0,
+    checkEnd = false;
+
 module.exports = {
     initAppHandler : function () {
         // init app handler
         this.getUserInput();
         let folderPath = './' + userInputData[0];
         while(!this.checkDir(folderPath)){
+            // folder check fail (not found). repeat request input folder path 
             console.log(userInputData[0]+' folder not found. please check folder name');
             userInputData = [];
             this.getUserInput();
@@ -32,8 +40,11 @@ module.exports = {
         }
         this.getImageFileList(folderPath);
         for(let imageFileName of fileList) {
-            let fileFullPath = folderPath +'/'+imageFileName;
-            this.imageCompressor(fileFullPath, folderPath);
+            //get origin file size
+            fileSizeMap[imageFileName] = {};
+            this.getFileSize(folderPath, imageFileName, 0);
+            //convert and save image file
+            this.imageCompressor(imageFileName, folderPath);
             // this.getImageData(imageFileName, folderPath);
         }
     },
@@ -67,25 +78,49 @@ module.exports = {
     //         }
     //     });
     // },
-    imageCompressor : function (imagePath ,folderPath) {
+    imageCompressor : function (imageFileName ,folderPath) {
         //XXX: 추 후에 사용하려면 더 적절한 패키지를 찾을 것 (이유 : 사용 목적에 비해 디펜던시, 노드모듈이 너무 많음.)
-        let setQuality = Number(userInputData[2]);
-
-        imageCompressor([imagePath], folderPath + '/convert', {
+        const thisApp = this;
+        let setQuality = Number(userInputData[2]),
+            convertFolderPath = folderPath + '/convert_' + setQuality;
+        imageCompressor([folderPath +'/'+ imageFileName], convertFolderPath, {
             plugins: [
                 imageminMozjpeg({
                     quality : setQuality
                 }),
-                imageminPngquant({quality: [(setQuality-10)/100, setQuality/100 ]})
+                imageminPngquant({
+                    quality : setQuality
+                })
             ]
-        }).then(result => {
-            //TODO : 후속처리 및 파일 크기 비교
-
+        }).then(() => {
+            //send convert file path.
+            //XXX : result parameter 존재 (path<String>, data<Buffer>)
+            thisApp.getFileSize(convertFolderPath, imageFileName, 1);
         });
     },
-    getFileSize : function (path) {
-        //TODO : get file size
-        
+    getFileSize : function (folderPath, fileName, flag) {
+        const thisApp = this;
+        let fileSize = 0;
+        let path = folderPath + '/' + fileName;
+        checkSize(path, (err, size) => {
+            convertCount++;
+            if(err) {
+                thisApp.errDisplay(err, fileName + ' file size check fail.');
+                fileSize = null
+            } else {
+                fileSize = (size/1024).toFixed(2);
+            }
+            // add data map
+            if(flag == 0) {
+                fileSizeMap[fileName].originFileSize = Number(fileSize);
+            } else {
+                fileSizeMap[fileName].convertSize = Number(fileSize);
+            }
+            if(convertCount == (fileList.length *2)){
+                //XXX : 추 후에 사용한다면 이곳 코드를 다른 곳으로 이동
+                thisApp.createTextFile(folderPath);
+            }
+        });
     },
     checkDir : function (path) {
         if(fs.existsSync(path)) {
@@ -94,19 +129,21 @@ module.exports = {
             return false;
         } 
     },
-    createTextFile : function (filePath, text, name) {
+    createTextFile : function (folderPath, ) {
         // text file creater
+        // TODO : 
         const thisApp = this;
         let buffer = new buffer(text);
         fs.writeFile(filePath + '/' + name, buffer, (err) => {
             if(err) {
                 thisApp.errDisplay(err, name + ' create err. check err.')
             } else {
-                console.log('create ' + name + ' text file');
+                // console.log('create ' + name + ' text file');
             }
         });
     },
     errDisplay : function (err, text) {
+        // err display
         console.log(text);
         console.log(err);
     }
