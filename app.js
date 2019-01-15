@@ -114,7 +114,7 @@ module.exports = {
                 fileSizeMap[fileName].originFileSize = Number(fileSize);
             } else {
                 fileSizeMap[fileName].convertSize = Number(fileSize);
-                fileSizeMap[fileName].dfValue = Number(fileSizeMap[fileName].originFileSize - Number(fileSize)).toFixed(2);
+                fileSizeMap[fileName].dfValue = Number((fileSizeMap[fileName].originFileSize - Number(fileSize)).toFixed(2));
             }
             if(convertCount == (fileList.length *2)){
                 //XXX : 추 후에 사용한다면 이곳 코드를 다른 곳으로 이동
@@ -144,37 +144,42 @@ module.exports = {
     },
     createResultJson : function () {
         // create json content
+
+        //reducer
         const reducer = (acc, value) => acc + value; 
+        const compareMax = (preVal, curVal) => preVal > curVal ? preVal : curVal;
+        const compareMin = (preVal, curVal) => preVal > curVal ? curVal : preVal;
 
-        let maxDfSize = 0,
-            minDfSize = 0;
-
-        let calculerArray = [[],[],[]];
+        // 0. originSizeList 1. convertSizeList 2. dfferenceSizeList
+        let sizeValueArray = [[],[],[]];
         
         for(let item of fileList) {
-            let oriSize = fileSizeMap[item].originFileSize;
-            let cvSize = fileSizeMap[item].convertSize;
-            let dfSize = fileSizeMap[item].dfSize;
-            calculerArray[0].push(oriSize);
-            calculerArray[1].push(cvSize);
-            calculerArray[2].push(dfSize);
-            originResult.totalSize += oriSize;
-            convertResult.totalSize += cvSize;
+            sizeValueArray[0].push(fileSizeMap[item].originFileSize);
+            sizeValueArray[1].push(fileSizeMap[item].convertSize);
+            sizeValueArray[2].push(fileSizeMap[item].dfValue);
         }
-        
+        let totalSizeArray = [
+            Number((sizeValueArray[0].reduce(reducer)).toFixed(2)),
+            Number((sizeValueArray[1].reduce(reducer)).toFixed(2)),
+            Number((sizeValueArray[2].reduce(reducer)).toFixed(2))
+        ]
         fileSizeMap['originResult']= {
-            maxSize : Math.max(calculerArray[0]),
-            minSize : Math.min(calculerArray[0]),
-            totalSize : (calculerArray[0].reduce(reducer)).toFixed(2),
-            averageSize : (totalSize / fileList.length).toFixed(2)
+            maxSize : sizeValueArray[0].reduce(compareMax),
+            minSize : sizeValueArray[0].reduce(compareMin),
+            totalSize : Number((totalSizeArray[0] / 1024).toFixed(2)),
+            averageSize : Number((totalSizeArray[0] / fileList.length).toFixed(2))
         };
         fileSizeMap['convertResult'] = {
-            maxSize : Math.max(calculerArray[1]),
-            minSize : Math.min(calculerArray[1]),
-            totalSize : (calculerArray[1].reduce(reducer)).toFixed(2),
-            averageSize : (totalSize / fileList.length).toFixed(2)
+            maxSize : sizeValueArray[1].reduce(compareMax),
+            minSize : sizeValueArray[1].reduce(compareMin),
+            totalSize : Number((totalSizeArray[1] / 1024).toFixed(2)),
+            averageSize : Number((totalSizeArray[1] / fileList.length).toFixed(2))
         };
-
+        fileSizeMap['dfValueResult'] = {
+            maxSize : sizeValueArray[2].reduce(compareMax),
+            minSize : sizeValueArray[2].reduce(compareMin),
+            totalSize : totalSizeArray[2]
+        }
         fileSizeMap['fileNameList'] = fileList;
         return JSON.stringify(fileSizeMap, null, '\t');
     },
