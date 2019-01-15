@@ -65,18 +65,6 @@ module.exports = {
             }
         }
     },
-    // getImageData : function (fileName, path) {
-    //     //not use now...
-    //     const thisApp = this;
-    //     fs.readFile(path + '/' + fileName, (err, data) => {
-    //         if(err) {
-    //             thisApp.errDisplay(err, 'get Image fail. please check file');
-    //         } else {
-    //             let convertData = new Buffer(data);
-    //             thisApp.imageCompressor(convertData, fileName, path).then(response)
-    //         }
-    //     });
-    // },
     imageCompressor : function (imageFileName ,folderPath) {
         //XXX: 추 후에 사용하려면 더 적절한 패키지를 찾을 것 (이유 : 사용 목적에 비해 디펜던시, 노드모듈이 너무 많음.)
         const thisApp = this;
@@ -144,7 +132,6 @@ module.exports = {
     },
     createResultJson : function () {
         // create json content
-
         //reducer
         const reducer = (acc, value) => acc + value; 
         const compareMax = (preVal, curVal) => preVal > curVal ? preVal : curVal;
