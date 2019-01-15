@@ -23,8 +23,7 @@ const menuText = [
 var fileList = [];
 
 // check convert count
-var convertCount = 0,
-    checkEnd = false;
+var convertCount = 0;
 
 module.exports = {
     initAppHandler : function () {
@@ -115,6 +114,7 @@ module.exports = {
                 fileSizeMap[fileName].originFileSize = Number(fileSize);
             } else {
                 fileSizeMap[fileName].convertSize = Number(fileSize);
+                fileSizeMap[fileName].dfValue = Number(fileSizeMap[fileName].originFileSize - Number(fileSize)).toFixed(2);
             }
             if(convertCount == (fileList.length *2)){
                 //XXX : 추 후에 사용한다면 이곳 코드를 다른 곳으로 이동
@@ -129,18 +129,54 @@ module.exports = {
             return false;
         } 
     },
-    createTextFile : function (folderPath, ) {
+    createTextFile : function (folderPath) {
         // text file creater
-        // TODO : 
         const thisApp = this;
-        let buffer = new buffer(text);
-        fs.writeFile(filePath + '/' + name, buffer, (err) => {
+        //imageFileList add
+        let jsonContents = this.createResultJson();        
+        fs.writeFile(folderPath + '/result.json', jsonContents, 'utf8',(err) => {
             if(err) {
-                thisApp.errDisplay(err, name + ' create err. check err.')
+                thisApp.errDisplay(err, +'result json create err. check err.')
             } else {
-                // console.log('create ' + name + ' text file');
+                console.log('create result json file');
             }
         });
+    },
+    createResultJson : function () {
+        // create json content
+        const reducer = (acc, value) => acc + value; 
+
+        let maxDfSize = 0,
+            minDfSize = 0;
+
+        let calculerArray = [[],[],[]];
+        
+        for(let item of fileList) {
+            let oriSize = fileSizeMap[item].originFileSize;
+            let cvSize = fileSizeMap[item].convertSize;
+            let dfSize = fileSizeMap[item].dfSize;
+            calculerArray[0].push(oriSize);
+            calculerArray[1].push(cvSize);
+            calculerArray[2].push(dfSize);
+            originResult.totalSize += oriSize;
+            convertResult.totalSize += cvSize;
+        }
+        
+        fileSizeMap['originResult']= {
+            maxSize : Math.max(calculerArray[0]),
+            minSize : Math.min(calculerArray[0]),
+            totalSize : (calculerArray[0].reduce(reducer)).toFixed(2),
+            averageSize : (totalSize / fileList.length).toFixed(2)
+        };
+        fileSizeMap['convertResult'] = {
+            maxSize : Math.max(calculerArray[1]),
+            minSize : Math.min(calculerArray[1]),
+            totalSize : (calculerArray[1].reduce(reducer)).toFixed(2),
+            averageSize : (totalSize / fileList.length).toFixed(2)
+        };
+
+        fileSizeMap['fileNameList'] = fileList;
+        return JSON.stringify(fileSizeMap, null, '\t');
     },
     errDisplay : function (err, text) {
         // err display
