@@ -1,4 +1,4 @@
-tileSizeComparison
+tileImageQulityReducer
 
 request
 
