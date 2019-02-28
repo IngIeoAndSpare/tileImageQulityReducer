@@ -4,10 +4,11 @@ var fs = require('fs'),
     checkSize = require('get-folder-size'),
     imageCompressor = require('imagemin'),
     imageminMozjpeg = require('imagemin-mozjpeg'),
-    imageminPngquant = require('imagemin-pngquant');
+    imageminPngquant = require('imagemin-pngquant'),
+    imageminGuetzli = require('imagemin-guetzli');
 
 // user input value 16x8 size request
-var userInputData = []; // 0. input path  1. image format  2. reduce persent 
+var userInputData = []; // 0. input path  1. image format  2. reduce persent  3. plugins
 
 // origin file size, convert file size map
 var fileSizeMap = {};
@@ -15,8 +16,9 @@ var fileSizeMap = {};
 // menu text
 const menuText = [
     'input folder name => ',
-    'input image format (png, jpg)=> ',
-    'input image reduce persent <range : (0 ~ 100)> '
+    'input image format (png, jpg) => ',
+    'input image reduce persent <range : (0 ~ 100)> => ',
+    'select imagemin plugins (1. MozJpeg   2. Pngquant   3.Guetzli) => '
 ];
 
 // folder file list
@@ -69,26 +71,40 @@ module.exports = {
         //XXX: 추 후에 사용하려면 더 적절한 패키지를 찾을 것 (이유 : 사용 목적에 비해 디펜던시, 노드모듈이 너무 많음.)
         const thisApp = this;
         let setQuality = Number(userInputData[2]),
-            convertFolderPath = folderPath + '/convert_' + setQuality;
+            convertFolderPath = folderPath + '/'+ userInputData[3] +'convert_' + setQuality,
+            selectPlugin = (
+                Number(userInputData[3]) == 1 ?
+                    imageminMozjpeg({
+                        quality : setQuality
+                    })
+                :
+                Number(userInputData[3]) == 2 ?
+                    imageminPngquant({
+                        quality : setQuality
+                    })
+                :
+                    imageminGuetzli({
+                        quality : setQuality
+                    })                                
+                );
+        let startTime = new Date().getTime();
         imageCompressor([folderPath +'/'+ imageFileName], convertFolderPath, {
             plugins: [
-                imageminMozjpeg({
-                    quality : setQuality
-                }),
-                imageminPngquant({
-                    quality : setQuality
-                })
+                selectPlugin
             ]
         }).then(() => {
             //send convert file path.
             //XXX : result parameter 존재 (path<String>, data<Buffer>)
-            thisApp.getFileSize(convertFolderPath, imageFileName, 1);
+            console.log(imageFileName + ' image convert end');
+            let endTime = new Date().getTime();
+            thisApp.getFileSize(convertFolderPath, imageFileName, 1, (endTime - startTime));
         });
     },
-    getFileSize : function (folderPath, fileName, flag) {
+    getFileSize : function (folderPath, fileName, flag, processTime) {
         const thisApp = this;
         let fileSize = 0;
         let path = folderPath + '/' + fileName;
+        
         checkSize(path, (err, size) => {
             convertCount++;
             if(err) {
@@ -97,12 +113,14 @@ module.exports = {
             } else {
                 fileSize = (size/1024).toFixed(2);
             }
-            // add data map
+            // add data map 
             if(flag == 0) {
+                // originFile size input
                 fileSizeMap[fileName].originFileSize = Number(fileSize);
             } else {
                 fileSizeMap[fileName].convertSize = Number(fileSize);
                 fileSizeMap[fileName].dfValue = Number((fileSizeMap[fileName].originFileSize - Number(fileSize)).toFixed(2));
+                fileSizeMap[fileName].processTime = processTime;
             }
             if(convertCount == (fileList.length *2)){
                 //XXX : 추 후에 사용한다면 이곳 코드를 다른 곳으로 이동
@@ -138,17 +156,19 @@ module.exports = {
         const compareMin = (preVal, curVal) => preVal > curVal ? curVal : preVal;
 
         // 0. originSizeList 1. convertSizeList 2. dfferenceSizeList
-        let sizeValueArray = [[],[],[]];
+        let sizeValueArray = [[],[],[],[]];
         
         for(let item of fileList) {
             sizeValueArray[0].push(fileSizeMap[item].originFileSize);
             sizeValueArray[1].push(fileSizeMap[item].convertSize);
             sizeValueArray[2].push(fileSizeMap[item].dfValue);
+            sizeValueArray[3].push(fileSizeMap[item].processTime);
         }
         let totalSizeArray = [
             Number((sizeValueArray[0].reduce(reducer)).toFixed(2)),
             Number((sizeValueArray[1].reduce(reducer)).toFixed(2)),
-            Number((sizeValueArray[2].reduce(reducer)).toFixed(2))
+            Number((sizeValueArray[2].reduce(reducer)).toFixed(2)),
+            Number((sizeValueArray[3].reduce(reducer)).toFixed(4))
         ]
         fileSizeMap['originResult']= {
             maxSize : sizeValueArray[0].reduce(compareMax),
@@ -166,7 +186,13 @@ module.exports = {
             maxSize : sizeValueArray[2].reduce(compareMax),
             minSize : sizeValueArray[2].reduce(compareMin),
             totalSize : totalSizeArray[2]
-        }
+        };
+        fileSizeMap['processTimeResult'] = {
+            maxTime : sizeValueArray[3].reduce(compareMax),
+            minTime : sizeValueArray[3].reduce(compareMin),
+            totalTime : totalSizeArray[3],
+            averageTime : Number((totalSizeArray[3] / fileList.length).toFixed(3))
+        };
         fileSizeMap['fileNameList'] = fileList;
         return JSON.stringify(fileSizeMap, null, '\t');
     },
